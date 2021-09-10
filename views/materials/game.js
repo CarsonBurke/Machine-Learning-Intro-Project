@@ -1,15 +1,23 @@
-let defaults = {
-    mapDimensions: "1000px",
-    gridPartSize: "20px",
-}
+import { runAI } from "./ai.js"
 
 let
-    map = { el: document.getElementById("map"), },
+    mapDimensions = 1000,
+    gridPartSize = 20,
+    map = {
+        el: document.getElementById("map"),
+        positions: [],
+    },
     hotkeys = {
+        moveUp: "ArrowUp",
+        moveLeft: "ArrowLeft",
+        moveDown: "ArrowDown",
+        moveRight: "ArrowRight",
+
         panUp: "w",
         panDown: "s",
         panLeft: "a",
         panRight: "d",
+
         stopPlacing: "x",
     },
     structures = {
@@ -18,23 +26,47 @@ let
 
 // Create map and implement values
 
-map.el.style.width = defaults.mapDimensions
-map.el.style.height = defaults.mapDimensions
+map.el.style.width = mapDimensions + "px"
+map.el.style.height = mapDimensions + "px"
 
-// Dimensions / number of tiles will give size, size should be 10px
-
-let gridSize = defaults.mapDimensions / defaults.gridPartSize
-
-console.log(gridSize)
+createGrid()
 
 function createGrid() {
 
-    let gridSize = 100
+    // Dimensions / number of tiles will give size, size should be 10px
+
+    let gridSize = mapDimensions / gridPartSize
+
+    // Loop through each position
+
+    for (let x = 0; x < gridSize; x++) {
+        for (let y = 0; y < gridSize; y++) {
+
+            let type = "gridPartParent"
+            let id = x * 50 + y
+
+            let gridPartParent = document.createElement("div")
+
+            gridPartParent.dataset.type = type
+            gridPartParent.dataset.id = id
+
+            gridPartParent.classList.add("gridPartParent")
+
+            gridPartParent.style.width = gridPartSize + "px"
+            gridPartParent.style.height = gridPartSize + "px"
+
+            gridPartParent.innerText = id
+
+            map.el.appendChild(gridPartParent)
+
+            map.positions.push({ type: type, id: id, x: x, y: y })
+        }
+    }
 }
 
 // Music
 
-notMusicPlaying = true
+let notMusicPlaying = true
 
 document.addEventListener("mousedown", playMusic)
 document.addEventListener("keydown", playMusic)
@@ -55,7 +87,7 @@ function playMusic() {
 
 let scale = 1
 
-map.el.onwheel = function zoom(event) {
+document.onwheel = function zoom(event) {
 
     event.preventDefault();
 
@@ -71,23 +103,26 @@ map.el.onwheel = function zoom(event) {
 let upPos = 0
 let leftPos = 0
 
-window.onkeydown = function(e) {
+window.onkeydown = function(event) {
 
-    if (e.key == hotkeys.panUp) {
+    let key = event.key
+
+    if (key == hotkeys.panUp) {
 
         startMove("up")
-    } else if (e.key == hotkeys.panDown) {
+    } else if (key == hotkeys.panDown) {
 
         startMove("down")
     }
-    if (e.key == hotkeys.panLeft) {
+    if (key == hotkeys.panLeft) {
 
         startMove("left")
-    } else if (e.key == hotkeys.panRight) {
+    } else if (key == hotkeys.panRight) {
 
         startMove("right")
     }
-    if (e.key == hotkeys.stopPlacing) {
+
+    if (key == hotkeys.stopPlacing) {
 
         stopPlacing()
     }
@@ -181,3 +216,56 @@ function changeDirection() {
         map.el.style.left = leftPos + "px"
     }
 }
+
+// Place game objects
+
+function findGridPartWithPos(pos) {
+
+    let id = pos.x * 50 + pos.y
+
+    let gridPartParents = document.getElementsByClassName("gridPartParent")
+
+    partsWithId = map.positions.filter(gridPartParent => gridPartParent.id == id)
+    return partsWithId
+}
+
+function placeObject(opts, pos) {
+
+    let element = document.createElement("div")
+
+    element.classList.add(opts.classList)
+
+    element.style.position = "relative"
+    element.style.top = gridPartSize * opts.y + "px"
+    element.style.left = gridPartSize * opts.x + "px"
+
+    let gridPartParent = findGridPartWithPos(pos)
+
+    gridPartParent.appendChild(element)
+}
+
+placePlayer()
+
+function placePlayer() {
+
+    let placePos = { x: 1, y: 2 }
+
+    placeObject({
+        classList: "player",
+    }, placePos)
+}
+
+placeGoal()
+
+function placeGoal() {
+
+    let placePos = { x: 25, y: 19 }
+}
+
+// AI
+
+let aiOpts = {
+    goal: { x: 1, y: 1 }
+}
+
+runAI(aiOpts)
