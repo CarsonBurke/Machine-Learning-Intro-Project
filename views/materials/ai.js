@@ -1,6 +1,6 @@
-function runAI(aiOpts) {
+function runAI(opts) {
 
-    let goal = aiOpts.goalPos
+    let goal = opts.goalPos
     let points = 0
     let options = {
         move: function(direction) {
@@ -29,20 +29,28 @@ function runAI(aiOpts) {
 
     function randomDirection() {
 
-        let directions = ["top", "left", "bottom", "right"]
+        let directions = ["up", "left", "down", "right"]
 
-        let value = Math.floor(Math.random() * 10) * 4
+        let value = Math.floor(Math.random() * 4) + 1
 
         return directions[value - 1]
     }
 
-    setInterval(runTick, 1000)
+    let tick = 0
+
+    //setInterval(runTick, opts.tickSpeed)
 
     function runTick() {
 
+        tick++
+
+        console.log("Tick: " + tick)
+
+        let direction = randomDirection()
+
+        console.log(direction)
+
         if (aiPos == goal) return "Reached goal"
-
-
     }
 }
 

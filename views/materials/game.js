@@ -20,7 +20,7 @@ let
 
         stopPlacing: "x",
     },
-    structures = {
+    objects = {
 
     }
 
@@ -43,23 +43,22 @@ function createGrid() {
         for (let y = 0; y < gridSize; y++) {
 
             let type = "gridPartParent"
-            let id = x * 50 + y
+            let z = x * 50 + y
+
+            let id = type + z
 
             let gridPartParent = document.createElement("div")
 
-            gridPartParent.dataset.type = type
-            gridPartParent.dataset.id = id
+            gridPartParent.id = id
 
             gridPartParent.classList.add("gridPartParent")
 
             gridPartParent.style.width = gridPartSize + "px"
             gridPartParent.style.height = gridPartSize + "px"
 
-            gridPartParent.innerText = id
-
             map.el.appendChild(gridPartParent)
 
-            map.positions.push({ type: type, id: id, x: x, y: y })
+            map.positions.push({ id: id, x: x, y: y })
         }
     }
 }
@@ -110,6 +109,7 @@ window.onkeydown = function(event) {
     if (key == hotkeys.panUp) {
 
         startMove("up")
+
     } else if (key == hotkeys.panDown) {
 
         startMove("down")
@@ -117,6 +117,7 @@ window.onkeydown = function(event) {
     if (key == hotkeys.panLeft) {
 
         startMove("left")
+
     } else if (key == hotkeys.panRight) {
 
         startMove("right")
@@ -125,6 +126,23 @@ window.onkeydown = function(event) {
     if (key == hotkeys.stopPlacing) {
 
         stopPlacing()
+    }
+
+    if (key == hotkeys.moveUp) {
+
+        movePlayer("up")
+    }
+    if (key == hotkeys.moveLeft) {
+
+        movePlayer("left")
+    }
+    if (key == hotkeys.moveDown) {
+
+        movePlayer("down")
+    }
+    if (key == hotkeys.moveRight) {
+
+        movePlayer("right")
     }
 }
 
@@ -219,53 +237,138 @@ function changeDirection() {
 
 // Place game objects
 
-function findGridPartWithPos(pos) {
+function setPosition(object) {
 
-    let id = pos.x * 50 + pos.y
+    let id = object.type + (object.x * 50 + object.y)
 
-    let gridPartParents = document.getElementsByClassName("gridPartParent")
+    let el = document.getElementsByClassName(object.type)[0]
 
-    partsWithId = map.positions.filter(gridPartParent => gridPartParent.id == id)
-    return partsWithId
+    if (!el) return
+
+    el.style.position = "absolute"
+
+    el.style.top = gridPartSize * object.y + "px"
+    el.style.left = gridPartSize * object.x + "px"
 }
 
-function placeObject(opts, pos) {
+function placeObject(opts) {
 
     let element = document.createElement("div")
 
-    element.classList.add(opts.classList)
+    element.classList.add(opts.type)
+    element.id = opts.type + (opts.x * 50 + opts.y)
 
-    element.style.position = "relative"
+    element.style.position = "absolute"
+
     element.style.top = gridPartSize * opts.y + "px"
     element.style.left = gridPartSize * opts.x + "px"
 
-    let gridPartParent = findGridPartWithPos(pos)
+    map.el.appendChild(element)
 
-    gridPartParent.appendChild(element)
+    return opts
 }
 
 placePlayer()
 
 function placePlayer() {
 
-    let placePos = { x: 1, y: 2 }
+    let type = "player"
+    let pos = { x: 1, y: 2 }
 
-    placeObject({
-        classList: "player",
-    }, placePos)
+    objects[type] = placeObject({
+        type: type,
+        x: pos.x,
+        y: pos.y,
+    })
 }
 
 placeGoal()
 
 function placeGoal() {
 
-    let placePos = { x: 25, y: 19 }
+    let type = "goal"
+    let pos = { x: 8, y: 12 }
+
+    objects[type] = placeObject({
+        type: type,
+        x: pos.x,
+        y: pos.y,
+    })
+}
+
+// Movement
+
+async function reachedGoal() {
+
+    let goalReachedParent = document.getElementsByClassName("goalReachedParent")[0]
+
+    console.log("1")
+
+    goalReachedParent.classList.add("goalReachedParentShow")
+
+    function wait() {
+        return new Promise(resolve => {
+
+            setTimeout(() => {
+                resolve()
+            }, 2000)
+            console.log('hi')
+        })
+    }
+
+    await wait()
+
+    console.log("2")
+
+    goalReachedParent.classList.remove("goalReachedParentShow")
+}
+
+function movePlayer(direction) {
+
+    let player = objects.player
+
+    if (!player) return "No player"
+
+    if (direction == "up") {
+
+        if (player.y <= 0) return
+
+        player.y -= 1
+    }
+    if (direction == "left") {
+
+        if (player.x <= 0) return
+
+        player.x -= 1
+    }
+    if (direction == "down") {
+
+        if (player.y >= 49) return
+
+        player.y += 1
+    }
+    if (direction == "right") {
+
+        if (player.x >= 49) return
+
+        player.x += 1
+    }
+
+    setPosition(player)
+
+    let goal = objects.goal
+
+    if (player.x == goal.x && player.y == goal.y) {
+
+        reachedGoal()
+    }
 }
 
 // AI
 
-let aiOpts = {
-    goal: { x: 1, y: 1 }
+let opts = {
+    goal: { x: 1, y: 1 },
+    tickSpeed: 100,
 }
 
-runAI(aiOpts)
+runAI(opts)
