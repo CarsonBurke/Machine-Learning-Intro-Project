@@ -148,8 +148,8 @@ body {
     margin: auto;
     position: fixed;
     bottom: -10px;
-    left: 0;
-    right: 0;
+    left: 10px;
+    right: 10px;
     background: black;
     opacity: 0;
     z-index: 1000;
@@ -198,7 +198,7 @@ body {
     height: 15px;
     margin-top: 2.5px;
     margin-left: 2.5px;
-    background: rgb(25, 97, 253);
+    background: rgb(49, 114, 255);
     border-radius: 100%;
     box-shadow: rgba(0, 0, 0, 0.4) 0 0 10px 0;
     transition: all 0.1s;

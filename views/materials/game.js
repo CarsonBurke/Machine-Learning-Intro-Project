@@ -237,20 +237,6 @@ function changeDirection() {
 
 // Place game objects
 
-function setPosition(object) {
-
-    let id = object.type + (object.x * 50 + object.y)
-
-    let el = document.getElementsByClassName(object.type)[0]
-
-    if (!el) return
-
-    el.style.position = "absolute"
-
-    el.style.top = gridPartSize * object.y + "px"
-    el.style.left = gridPartSize * object.x + "px"
-}
-
 function placeObject(opts) {
 
     let element = document.createElement("div")
@@ -268,18 +254,24 @@ function placeObject(opts) {
     return opts
 }
 
-placePlayer()
+let playerCount = 50
+
+for (let i = 0; i < playerCount; i++) placePlayer()
 
 function placePlayer() {
 
     let type = "player"
-    let pos = { x: 1, y: 2 }
+    let pos = { x: 0, y: 0 }
 
-    objects[type] = placeObject({
+    let object = placeObject({
         type: type,
         x: pos.x,
         y: pos.y,
     })
+
+    if (!objects[type]) objects[type] = []
+
+    objects[type].push(object)
 }
 
 placeGoal()
@@ -287,7 +279,7 @@ placeGoal()
 function placeGoal() {
 
     let type = "goal"
-    let pos = { x: 8, y: 12 }
+    let pos = { x: 49, y: 49 }
 
     objects[type] = placeObject({
         type: type,
@@ -296,79 +288,12 @@ function placeGoal() {
     })
 }
 
-// Movement
-
-async function reachedGoal() {
-
-    let goalReachedParent = document.getElementsByClassName("goalReachedParent")[0]
-
-    console.log("1")
-
-    goalReachedParent.classList.add("goalReachedParentShow")
-
-    function wait() {
-        return new Promise(resolve => {
-
-            setTimeout(() => {
-                resolve()
-            }, 2000)
-            console.log('hi')
-        })
-    }
-
-    await wait()
-
-    console.log("2")
-
-    goalReachedParent.classList.remove("goalReachedParentShow")
-}
-
-function movePlayer(direction) {
-
-    let player = objects.player
-
-    if (!player) return "No player"
-
-    if (direction == "up") {
-
-        if (player.y <= 0) return
-
-        player.y -= 1
-    }
-    if (direction == "left") {
-
-        if (player.x <= 0) return
-
-        player.x -= 1
-    }
-    if (direction == "down") {
-
-        if (player.y >= 49) return
-
-        player.y += 1
-    }
-    if (direction == "right") {
-
-        if (player.x >= 49) return
-
-        player.x += 1
-    }
-
-    setPosition(player)
-
-    let goal = objects.goal
-
-    if (player.x == goal.x && player.y == goal.y) {
-
-        reachedGoal()
-    }
-}
-
 // AI
 
 let opts = {
-    goal: { x: 1, y: 1 },
-    tickSpeed: 100,
+    goal: objects.goal,
+    tickSpeed: 0.01,
+    objects: objects,
 }
 
 runAI(opts)

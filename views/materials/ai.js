@@ -1,31 +1,88 @@
 function runAI(opts) {
 
-    let goal = opts.goalPos
-    let points = 0
-    let options = {
-        move: function(direction) {
+    let gridPartSize = 20
 
-            if (direction == "top") {
+    let objects = opts.objects
 
+    function setPosition( object, iteration) {
 
-                return
-            }
-            if (direction == "left") {
+        let id = object.type + (object.x * 50 + object.y)
 
-                return
-            }
-            if (direction == "bottom") {
+        console.log(id)
 
-                return
-            }
-            if (direction == "right") {
+        let el = document.getElementsByClassName(object.type)[iteration]
 
-                return
-            }
-        },
+        if (el == null) return
+
+        el.style.position = "absolute"
+
+        el.style.top = gridPartSize * object.y + "px"
+        el.style.left = gridPartSize * object.x + "px"
     }
 
-    let aiPos = { x: 1, y: 2 }
+    async function reachedGoal() {
+
+        let goalReachedParent = document.getElementsByClassName("goalReachedParent")[0]
+
+        console.log("1")
+
+        goalReachedParent.classList.add("goalReachedParentShow")
+
+        function wait() {
+            return new Promise(resolve => {
+
+                setTimeout(() => {
+                    resolve()
+                }, 2000)
+                console.log('hi')
+            })
+        }
+
+        await wait()
+
+        console.log("2")
+
+        goalReachedParent.classList.remove("goalReachedParentShow")
+    }
+
+    function movePlayer(player, direction, iteration) {
+
+        if (!player) return "No player"
+
+        if (direction == "up") {
+
+            if (player.y <= 0) return
+
+            player.y -= 1
+        }
+        if (direction == "left") {
+
+            if (player.x <= 0) return
+
+            player.x -= 1
+        }
+        if (direction == "down") {
+
+            if (player.y >= 49) return
+
+            player.y += 1
+        }
+        if (direction == "right") {
+
+            if (player.x >= 49) return
+
+            player.x += 1
+        }
+
+        setPosition(player, iteration)
+
+        let goal = objects.goal
+
+        if (player.x == goal.x && player.y == goal.y) {
+
+            reachedGoal()
+        }
+    }
 
     function randomDirection() {
 
@@ -36,21 +93,31 @@ function runAI(opts) {
         return directions[value - 1]
     }
 
+    let goal = opts.goalPos
+    let points = 0
+    let options = {
+        movePlayer: movePlayer,
+    }
+
     let tick = 0
 
-    //setInterval(runTick, opts.tickSpeed)
+    setInterval(runTick, opts.tickSpeed)
 
     function runTick() {
 
         tick++
-
         console.log("Tick: " + tick)
 
-        let direction = randomDirection()
+        let iteration = 0
 
-        console.log(direction)
+        for (let player of objects.player) {
 
-        if (aiPos == goal) return "Reached goal"
+            let direction = randomDirection()
+
+            options.movePlayer(player, direction, iteration)
+
+            iteration++
+        }
     }
 }
 
