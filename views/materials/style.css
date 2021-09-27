@@ -213,5 +213,11 @@ body {
     transition: all 0.1s;
 }
 
+.line {
+    width: 4px;
+    position: absolute;
+    background-color: rgba(0, 255, 255, 0.6);
+}
+
 
 /*  */

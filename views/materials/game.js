@@ -1,41 +1,28 @@
-import { runAI } from "./ai.js"
+import "./gameVars.js"
 
-let
-    mapDimensions = 1000,
-    gridPartSize = 20,
-    map = {
-        el: document.getElementById("map"),
-        positions: [],
-    },
-    hotkeys = {
-        moveUp: "ArrowUp",
-        moveLeft: "ArrowLeft",
-        moveDown: "ArrowDown",
-        moveRight: "ArrowRight",
+function findById(id) {
 
-        panUp: "w",
-        panDown: "s",
-        panLeft: "a",
-        panRight: "d",
+    return objects[id]
+}
 
-        stopPlacing: "x",
-    },
-    objects = {
+function newId() {
 
-    }
+    nextId++
+    return nextId - 1
+}
 
 // Create map and implement values
 
 map.el.style.width = mapDimensions + "px"
 map.el.style.height = mapDimensions + "px"
 
+// Dimensions / number of tiles will give size, size should be 10px
+
+let gridSize = mapDimensions / gridPartSize
+
 createGrid()
 
 function createGrid() {
-
-    // Dimensions / number of tiles will give size, size should be 10px
-
-    let gridSize = mapDimensions / gridPartSize
 
     // Loop through each position
 
@@ -43,9 +30,8 @@ function createGrid() {
         for (let y = 0; y < gridSize; y++) {
 
             let type = "gridPartParent"
-            let z = x * 50 + y
 
-            let id = type + z
+            let id = newId()
 
             let gridPartParent = document.createElement("div")
 
@@ -58,7 +44,7 @@ function createGrid() {
 
             map.el.appendChild(gridPartParent)
 
-            map.positions.push({ id: id, x: x, y: y })
+            objects[id] = { id: id, type: type, x: x, y: y }
         }
     }
 }
@@ -88,11 +74,11 @@ let scale = 1
 
 document.onwheel = function zoom(event) {
 
-    event.preventDefault();
+    event.preventDefault()
 
     scale += event.deltaY * -0.0005;
 
-    scale = Math.min(Math.max(0.75, scale), 2);
+    scale = Math.min(Math.max(0.75, scale), 2)
 
     map.el.style.transform = "scale(" + scale + ")"
 }
@@ -239,10 +225,14 @@ function changeDirection() {
 
 function placeObject(opts) {
 
+    let id = newId()
+
     let element = document.createElement("div")
 
     element.classList.add(opts.type)
-    element.id = opts.type + (opts.x * 50 + opts.y)
+    element.id = id
+
+    objects[id] = opts
 
     element.style.position = "absolute"
 
@@ -251,27 +241,26 @@ function placeObject(opts) {
 
     map.el.appendChild(element)
 
+    opts.id = id
+
     return opts
 }
 
-let playerCount = 50
+let playerCount = 100
 
-for (let i = 0; i < playerCount; i++) placePlayer()
+for (let i = 0; i < playerCount; i++) placePlayer({ memory: {} })
 
-function placePlayer() {
+function placePlayer(opts) {
 
     let type = "player"
     let pos = { x: 0, y: 0 }
 
-    let object = placeObject({
+    placeObject({
         type: type,
         x: pos.x,
         y: pos.y,
+        memory: opts.memory
     })
-
-    if (!objects[type]) objects[type] = []
-
-    objects[type].push(object)
 }
 
 placeGoal()
@@ -279,9 +268,8 @@ placeGoal()
 function placeGoal() {
 
     let type = "goal"
-    let pos = { x: 49, y: 49 }
-
-    objects[type] = placeObject({
+    let pos = { x: 14, y: 14 }
+    placeObject({
         type: type,
         x: pos.x,
         y: pos.y,
@@ -290,10 +278,265 @@ function placeGoal() {
 
 // AI
 
-let opts = {
-    goal: objects.goal,
-    tickSpeed: 0.01,
-    objects: objects,
-}
+ai({
+    tickSpeed: 1,
+})
 
-runAI(opts)
+function ai(opts) {
+
+    let network
+    let memory = {
+        bestPath: [],
+        players: {},
+    }
+
+    let options = {
+        moveUp: function(player) {
+
+            if (player.y <= 0) {
+
+                options.moveDown(player)
+                return
+            }
+
+            player.y -= 1
+
+            setPosition(player)
+        },
+        moveLeft: function(player) {
+
+            if (player.x <= 0) {
+
+                options.moveRight(player)
+                return
+            }
+
+            player.x -= 1
+
+            setPosition(player)
+        },
+        moveDown: function(player) {
+
+            if (player.y >= gridSize - 1) {
+
+                options.moveUp(player)
+                return
+            }
+
+            player.y += 1
+
+            setPosition(player)
+        },
+        moveRight: function(player) {
+
+            if (player.x >= gridSize - 1) {
+
+                options.moveLeft(player)
+                return
+            }
+
+            player.x += 1
+
+            setPosition(player)
+        },
+    }
+
+    async function reachedGoal() {
+
+        let goalReachedParent = document.getElementsByClassName("goalReachedParent")[0]
+
+        goalReachedParent.classList.add("goalReachedParentShow")
+
+        function wait() {
+            return new Promise(resolve => {
+
+                setTimeout(() => {
+                    resolve()
+                }, 2000)
+            })
+        }
+
+        await wait()
+
+        goalReachedParent.classList.remove("goalReachedParentShow")
+    }
+
+    function setPosition(player) {
+
+        let el = document.getElementById(player.id)
+
+        if (el == null) return
+
+        el.style.position = "absolute"
+
+        el.style.top = gridPartSize * player.y + "px"
+        el.style.left = gridPartSize * player.x + "px"
+    }
+
+    function findDirection(pos1, pos2) {
+
+        let value
+
+        // check top
+
+        if (pos1.x == pos2.x && pos1.y - 1 == pos2.y) value = 0
+
+        // check left
+
+        if (pos1.x - 1 == pos2.x && pos1.y == pos2.y) value = 1
+
+        // check bottom
+
+        if (pos1.x == pos2.x && pos1.y + 1 == pos2.y) value = 2
+
+        // check right
+
+        if (pos1.x + 1 == pos2.x && pos1.y == pos2.y) value = 3
+
+        let optionsArray = Object.keys(options)
+
+        let direction = optionsArray[value]
+        return direction
+    }
+
+    function randomDirection() {
+
+        let value = Math.floor(Math.random() * 4)
+
+        let optionsArray = Object.keys(options)
+
+        let direction = optionsArray[value]
+        return direction
+    }
+
+    function findGoal() {
+
+        for (let id in objects) {
+
+            let object = findById(id)
+
+            if (object.type == "goal") return object
+        }
+    }
+
+    function findPlayers() {
+
+        let players = []
+
+        for (let id in objects) {
+
+            let object = findById(id)
+
+            if (object.type == "player") players.push(object)
+        }
+
+        return players
+    }
+
+    function isEqual(pos1, pos2) {
+
+        if (pos1.x == pos2.x && pos1.y == pos2.y) return true
+    }
+
+    function reproduce(player) {
+
+        let playerMemory = memory.players[player.id]
+
+        /* console.log("reproduced") */
+
+        // Delete players
+
+        for (let player of findPlayers()) {
+
+            let el = document.getElementById(player.id)
+            el.remove()
+
+            delete objects[player.id]
+        }
+
+        // Create new players
+
+        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: playerMemory.travelledPath } })
+    }
+
+    function runBatch(tick) {
+
+        for (let player of findPlayers()) {
+
+            // Initialize player's memory
+
+            if (!memory.players[player.id]) memory.players[player.id] = {}
+            if (!memory.players[player.id].travelledPath) memory.players[player.id].travelledPath = []
+
+            let playerMemory = memory.players[player.id]
+
+            // If the player reaches the goal
+
+            if (isEqual(player, findGoal())) {
+
+                // Show UI that the goal was reached
+
+                reachedGoal()
+
+                // Reproduce players
+
+                reproduce(player)
+                continue
+            }
+
+            // If player has preset path
+
+            if (player.memory.pathInUse) {
+
+                // Small chance (1/300) to branch off and use a random path
+
+                let totalValue = 300
+
+                let value = (Math.random() * totalValue).toFixed()
+
+                if (value == totalValue) player.memory.pathInUse = undefined
+
+                //
+
+
+                let path = player.memory.pathInUse
+
+                // Find direction to next part of path
+
+                let direction = findDirection(player, path[0])
+                options[direction](player, tick)
+
+                // Remove part of path
+
+                player.memory.pathInUse = path.slice(1)
+
+                // Record path
+
+                playerMemory.travelledPath.push({ x: player.x, y: player.y })
+                continue
+            }
+
+            // Move player
+
+            let direction = randomDirection()
+            options[direction](player, tick)
+
+            // Record where it moves to
+
+            playerMemory.travelledPath.push({ x: player.x, y: player.y })
+        }
+    }
+
+    setInterval(runTick, opts.tickSpeed)
+
+    let tick = 0
+
+    function runTick() {
+
+        /* console.log("Tick: " + tick) */
+
+        runBatch(tick)
+
+        tick++
+    }
+}
