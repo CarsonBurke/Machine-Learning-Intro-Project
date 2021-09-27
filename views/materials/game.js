@@ -284,10 +284,12 @@ ai({
 
 function ai(opts) {
 
-    let network
     let memory = {
         players: {},
     }
+    let goal = findGoal()
+
+
     let generation = 0
     let pathLength = 0
 
@@ -345,10 +347,6 @@ function ai(opts) {
     function setPosition(player) {
 
         let el = document.getElementById(player.id)
-
-        if (el == null) return
-
-        el.style.position = "absolute"
 
         el.style.top = gridPartSize * player.y + "px"
         el.style.left = gridPartSize * player.x + "px"
@@ -419,20 +417,16 @@ function ai(opts) {
         if (pos1.x == pos2.x && pos1.y == pos2.y) return true
     }
 
-    function reproduce(player) {
-
-        let playerMemory = memory.players[player.id]
-
-        /* console.log("reproduced") */
+    function reproduce(player, players) {
 
         // Record stats
 
         generation++
-        pathLength = playerMemory.travelledPath.length
+        pathLength = player.memory.travelledPath.length
 
         // Delete players
 
-        for (let player of findPlayers()) {
+        for (let player of players) {
 
             let el = document.getElementById(player.id)
             el.remove()
@@ -442,28 +436,27 @@ function ai(opts) {
 
         // Create new players
 
-        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: playerMemory.travelledPath } })
+        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: player.memory.travelledPath } })
     }
 
     function runBatch(tick) {
 
-        for (let player of findPlayers()) {
+        let players = findPlayers()
+
+        for (let player of players) {
 
             // Initialize player's memory
 
-            if (!memory.players[player.id]) memory.players[player.id] = {}
-            if (!memory.players[player.id].travelledPath) memory.players[player.id].travelledPath = []
-
-            let playerMemory = memory.players[player.id]
+            if (!player.memory.travelledPath) player.memory.travelledPath = []
 
             // If the player reaches the goal
 
-            if (isEqual(player, findGoal())) {
+            if (isEqual(player, goal)) {
 
                 // Reproduce players
 
-                reproduce(player)
-                continue
+                reproduce(player, players)
+                return
             }
 
             // If player has preset path
@@ -472,30 +465,30 @@ function ai(opts) {
 
                 // Small chance (1/300) to branch off and use a random path
 
-                let totalValue = 300
+                let totalValue = Math.min(players.length, player.memory.pathInUse.length * 5)
 
                 let value = (Math.random() * totalValue).toFixed()
 
                 if (value == totalValue) player.memory.pathInUse = undefined
 
-                //
-
+                // Find direction to next part of path
 
                 let path = player.memory.pathInUse
 
-                // Find direction to next part of path
+                if (path) {
 
-                let direction = findDirection(player, path[0])
-                options[direction](player, tick)
+                    let direction = findDirection(player, path[0])
+                    options[direction](player, tick)
 
-                // Remove part of path
+                    // Remove part of path
 
-                player.memory.pathInUse = path.slice(1)
+                    player.memory.pathInUse = path.slice(1)
 
-                // Record path
+                    // Record path
 
-                playerMemory.travelledPath.push({ x: player.x, y: player.y })
-                continue
+                    player.memory.travelledPath.push({ x: player.x, y: player.y })
+                    continue
+                }
             }
 
             // Move player
@@ -505,11 +498,13 @@ function ai(opts) {
 
             // Record where it moves to
 
-            playerMemory.travelledPath.push({ x: player.x, y: player.y })
+            player.memory.travelledPath.push({ x: player.x, y: player.y })
         }
     }
 
     function updateUI() {
+
+        // For each UI display update to current values
 
         let el
 
@@ -528,8 +523,6 @@ function ai(opts) {
     let tick = 0
 
     function runTick() {
-
-        /* console.log("Tick: " + tick) */
 
         runBatch(tick)
 
