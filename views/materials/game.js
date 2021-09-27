@@ -279,16 +279,17 @@ function placeGoal() {
 // AI
 
 ai({
-    tickSpeed: 1,
+    tickSpeed: 0.1,
 })
 
 function ai(opts) {
 
     let network
     let memory = {
-        bestPath: [],
         players: {},
     }
+    let generation = 0
+    let pathLength = 0
 
     let options = {
         moveUp: function(player) {
@@ -339,26 +340,6 @@ function ai(opts) {
 
             setPosition(player)
         },
-    }
-
-    async function reachedGoal() {
-
-        let goalReachedParent = document.getElementsByClassName("goalReachedParent")[0]
-
-        goalReachedParent.classList.add("goalReachedParentShow")
-
-        function wait() {
-            return new Promise(resolve => {
-
-                setTimeout(() => {
-                    resolve()
-                }, 2000)
-            })
-        }
-
-        await wait()
-
-        goalReachedParent.classList.remove("goalReachedParentShow")
     }
 
     function setPosition(player) {
@@ -444,6 +425,11 @@ function ai(opts) {
 
         /* console.log("reproduced") */
 
+        // Record stats
+
+        generation++
+        pathLength = playerMemory.travelledPath.length
+
         // Delete players
 
         for (let player of findPlayers()) {
@@ -473,10 +459,6 @@ function ai(opts) {
             // If the player reaches the goal
 
             if (isEqual(player, findGoal())) {
-
-                // Show UI that the goal was reached
-
-                reachedGoal()
 
                 // Reproduce players
 
@@ -527,6 +509,20 @@ function ai(opts) {
         }
     }
 
+    function updateUI() {
+
+        let el
+
+        el = document.getElementById("tick")
+        el.innerText = tick
+
+        el = document.getElementById("generation")
+        el.innerText = generation
+
+        el = document.getElementById("pathLength")
+        el.innerText = pathLength
+    }
+
     setInterval(runTick, opts.tickSpeed)
 
     let tick = 0
@@ -536,6 +532,8 @@ function ai(opts) {
         /* console.log("Tick: " + tick) */
 
         runBatch(tick)
+
+        updateUI()
 
         tick++
     }
