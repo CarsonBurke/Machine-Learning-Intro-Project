@@ -21,6 +21,13 @@ let properties = {
 
         stopPlacing: "x",
     },
+    colors: {
+        red: "#b51818",
+        blue: "#3718b5",
+        green: "#18b543",
+        yellow: "#e4ff00",
+        purple: "#c700c2",
+    },
     objects: {
 
     }

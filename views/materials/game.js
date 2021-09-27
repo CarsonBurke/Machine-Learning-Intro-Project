@@ -11,6 +11,16 @@ function newId() {
     return nextId - 1
 }
 
+function randomColor() {
+
+    let value = Math.floor(Math.random() * Object.keys(colors).length)
+
+    let key = Object.keys(colors)[value]
+
+    let color = colors[key]
+    return color
+}
+
 // Create map and implement values
 
 map.el.style.width = mapDimensions + "px"
@@ -226,29 +236,31 @@ function changeDirection() {
 function placeObject(opts) {
 
     let id = newId()
-
-    let element = document.createElement("div")
-
-    element.classList.add(opts.type)
-    element.id = id
+    opts.id = id
 
     objects[id] = opts
 
-    element.style.position = "absolute"
+    // Style element
 
-    element.style.top = gridPartSize * opts.y + "px"
-    element.style.left = gridPartSize * opts.x + "px"
+    let el = document.createElement("div")
 
-    map.el.appendChild(element)
+    el.classList.add(opts.type)
+    el.id = id
 
-    opts.id = id
+    el.style.position = "absolute"
 
-    return opts
+    el.style.top = gridPartSize * opts.y + "px"
+    el.style.left = gridPartSize * opts.x + "px"
+
+    let color = opts.color
+    if (color) el.style.backgroundColor = color
+
+    map.el.appendChild(el)
 }
 
 let playerCount = 100
 
-for (let i = 0; i < playerCount; i++) placePlayer({ memory: {} })
+for (let i = 0; i < playerCount; i++) placePlayer({ memory: {}, color: randomColor() })
 
 function placePlayer(opts) {
 
@@ -259,7 +271,8 @@ function placePlayer(opts) {
         type: type,
         x: pos.x,
         y: pos.y,
-        memory: opts.memory
+        memory: opts.memory,
+        color: opts.color,
     })
 }
 
@@ -279,16 +292,12 @@ function placeGoal() {
 // AI
 
 ai({
-    tickSpeed: 0.1,
+    tickSpeed: 1,
 })
 
 function ai(opts) {
 
-    let memory = {
-        players: {},
-    }
     let goal = findGoal()
-
 
     let generation = 0
     let pathLength = 0
@@ -436,7 +445,7 @@ function ai(opts) {
 
         // Create new players
 
-        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: player.memory.travelledPath } })
+        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: player.memory.travelledPath }, color: player.color })
     }
 
     function runBatch(tick) {
