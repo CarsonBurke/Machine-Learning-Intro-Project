@@ -281,7 +281,7 @@ placeGoal()
 function placeGoal() {
 
     let type = "goal"
-    let pos = { x: 14, y: 14 }
+    let pos = { x: 49, y: 49 }
     placeObject({
         type: type,
         x: pos.x,
@@ -292,7 +292,7 @@ function placeGoal() {
 // AI
 
 ai({
-    tickSpeed: 1,
+    tickSpeed: 0.1,
 })
 
 function ai(opts) {
@@ -407,6 +407,11 @@ function ai(opts) {
         }
     }
 
+    function findPlayersWithParentsPath(players) {
+
+        return players.filter(player => player.memory.parentsPath)
+    }
+
     function findPlayers() {
 
         let players = []
@@ -445,7 +450,7 @@ function ai(opts) {
 
         // Create new players
 
-        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { pathInUse: player.memory.travelledPath }, color: player.color })
+        for (let i = 0; i < playerCount; i++) placePlayer({ memory: { parentsPath: player.memory.travelledPath }, color: player.color })
     }
 
     function runBatch(tick) {
@@ -470,19 +475,23 @@ function ai(opts) {
 
             // If player has preset path
 
-            if (player.memory.pathInUse) {
+            if (player.memory.parentsPath) {
+
+                let playersWithParentsPath = findPlayersWithParentsPath(players)
 
                 // Small chance (1/300) to branch off and use a random path
 
-                let totalValue = Math.min(players.length, player.memory.pathInUse.length * 5)
+                if (playersWithParentsPath.length > 1) {
+
+                let totalValue = Math.min(players.length, player.memory.parentsPath.length * 5)
 
                 let value = (Math.random() * totalValue).toFixed()
 
-                if (value == totalValue) player.memory.pathInUse = undefined
-
+                if (value == totalValue) player.memory.parentsPath = undefined
+}
                 // Find direction to next part of path
 
-                let path = player.memory.pathInUse
+                let path = player.memory.parentsPath
 
                 if (path) {
 
@@ -491,7 +500,7 @@ function ai(opts) {
 
                     // Remove part of path
 
-                    player.memory.pathInUse = path.slice(1)
+                    player.memory.parentsPath = path.slice(1)
 
                     // Record path
 

@@ -1,7 +1,7 @@
 // Assign variables
 
 let properties = {
-    mapDimensions: 300,
+    mapDimensions: 1000,
     gridPartSize: 20,
     nextId: 0,
     map: {
